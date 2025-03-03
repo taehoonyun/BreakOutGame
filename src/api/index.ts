@@ -45,7 +45,7 @@ export const getAuth = async (userId: string) => {
     throw new Error(err.response?.data?.err ?? err.message);
   }
 };
-export const login = async (userId: string) => {
+export const loginId = async (userId: string) => {
   try {
     const response = await client.post<SaveResponse>("/auth/login", {
       params: {

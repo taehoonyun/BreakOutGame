@@ -1,15 +1,16 @@
 import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Container, Card, Form, Button } from "react-bootstrap";
-import axios from "axios";
+import {loginId} from "@/api";
+import config from "@/config";
 
 const Login: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  
   // Handle form submission
   const onSubmit = (data: any) => {
-    
+    // loginId(data.username)
   };
 
   // Breakout-style animation
