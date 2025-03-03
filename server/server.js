@@ -7,11 +7,9 @@ const api = require('./routes/api');
 app.use(cors());
 // Serve static files from the React app's build folder
 app.use(express.static(path.join(__dirname, "client/build")));
+// API location
+app.use('/api', api);
 
-// A sample API endpoint
-app.get("/api/game", (req, res) => {
-  res.json({ message: "Hello from the Node.js server!" });
-});
 
 // For any other requests, serve the React app's index.html file.
 app.get("*", (req, res) => {

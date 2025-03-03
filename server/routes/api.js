@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const brickGame = require("../controllers/master");
+const ctrlGame = require("../controllers/master");
+const ctrlAuth = require("../controllers/auth");
 
-router.get("/play", brickGame.game);
+router.get("/auth/login", ctrlGame.game);
+router.post('/auth/login', ctrlAuth.login);
+module.exports = router;
