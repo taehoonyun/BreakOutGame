@@ -5,8 +5,14 @@ const app = express();
 const port = process.env.PORT || 5000;
 const api = require('./routes/api');
 app.use(cors());
-// Serve static files from the React app's build folder
-app.use(express.static(path.join(__dirname, "client/build")));
+
+// Parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Build output folder
+app.use(express.static(path.join(__dirname, 'build')));
+
 // API location
 app.use('/api', api);
 

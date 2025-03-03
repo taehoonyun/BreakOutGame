@@ -12,14 +12,14 @@ export default {
                 /* Local Production Test */
                 hostURL: 'http://localhost:5000',
                 base: '/',
-                baseURL: 'http://localhost:5000/api/data',
+                baseURL: 'http://localhost:5000/api',
                 fileURL: 'http://localhost:5000/file/',
                 adminVersion: '1.0.1',
             }
             : {
                 hostURL: 'http://localhost:5000',
                 base: '/',
-                baseURL: 'http://localhost:5000/api/data',
+                baseURL: 'http://localhost:5000/api',
                 fileURL: '/file/',
                 adminVersion: '1.0.1',
             },

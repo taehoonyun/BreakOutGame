@@ -1,15 +1,20 @@
 import React, { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Container, Card, Form, Button } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import {loginId} from "@/api";
 
 const Login: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const navigate = useNavigate();
 
   // Handle form submission
-  const onSubmit = (data: any) => {
-    loginId(data.username)
+  const onSubmit = async (data: any) => {
+    const response = await loginId(data.username);
+    if(response?.result){
+      navigate('/');
+    }
   };
 
   // Breakout-style animation
