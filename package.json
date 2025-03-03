@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@craco/craco": "^7.1.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
@@ -26,9 +27,9 @@
     "web-vitals": "^2.1.0"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "dev": "nodemon server/server.js"
   },
@@ -52,6 +53,7 @@
   },
   "devDependencies": {
     "@typescript-eslint/parser": "^5.62.0",
+    "craco-alias": "^3.0.1",
     "eslint-plugin-react": "^7.37.4"
   }
 }

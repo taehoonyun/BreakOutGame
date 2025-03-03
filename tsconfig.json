@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"] // Enable `@/` alias for `src/`
+    },
     "target": "es5",
     "lib": [
       "dom",
@@ -18,11 +22,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"] // Enable `@/` alias for `src/`
-    }
+    "jsx": "react-jsx"
   },
   "include": [
     "src"
