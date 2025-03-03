@@ -31,7 +31,7 @@ export interface Login {
 }
 export type SaveResponse = {
     result: boolean;
-    data: object;
+    data: any;
 };
 export const getAuth = async (userId: string) => {
   try {

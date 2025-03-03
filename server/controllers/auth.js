@@ -9,7 +9,7 @@ module.exports.login = async (req, res) => {
       //     // const { token, exp } = authUtil.generateLoginToken(id);
       mRes.sendJSON(res, 200, {
         result: true,
-        data: { message: "Login Success!" },
+        data: { userId, message: "Login Success!" },
       });
       //     // mRes.sendJSON(res, 200, {
       //     //     name: user.USER_NAME,

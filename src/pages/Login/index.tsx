@@ -13,6 +13,7 @@ const Login: React.FC = () => {
   const onSubmit = async (data: any) => {
     const response = await loginId(data.username);
     if(response?.result){
+      localStorage.setItem("userId",response?.data?.userId)
       navigate('/');
     }
   };
