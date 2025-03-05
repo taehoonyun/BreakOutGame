@@ -1,12 +1,14 @@
 import React, { useRef, useEffect } from "react";
-
+import { Socket } from "socket.io-client";
+import { createSocket } from "@/utils/index";
 type CanvasProps = {
-  width: number;
-  height: number;
-  style?: React.CSSProperties;
+  host: boolean;
+  room: string;
+  username: string;
 };
+const socket: Socket = createSocket();
 
-const Canvas: React.FC<CanvasProps> = () => {
+const Canvas: React.FC<CanvasProps> = ({ host, room, username }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -40,11 +42,13 @@ const Canvas: React.FC<CanvasProps> = () => {
     }
 
     // Update ball position when receiving updates from the server
-    //  socket.on("updateBall", (serverBallX, serverBallY) => {
-    //    // Update the local ball position to match the server's
-    //    ball_x = serverBallX;
-    //    ball_y = serverBallY;
-    //  });
+    if (host) {
+      socket.on("updateBall", (serverBallX, serverBallY) => {
+        // Update the local ball position to match the server's
+        ball_x = serverBallX;
+        ball_y = serverBallY;
+      });
+    }
 
     // Mouse event for paddle movement
     const mouseMoveHandler = (e: MouseEvent) => {
@@ -57,12 +61,12 @@ const Canvas: React.FC<CanvasProps> = () => {
 
     // Key event to control ball direction (if this client is the designated controller)
     const keyDownHandler = (e: KeyboardEvent) => {
-        if (e.key === "Right" || e.key === "ArrowRight") {
-          dx = Math.abs(dx) || 2;
-        } else if (e.key === "Left" || e.key === "ArrowLeft") {
-          dx = -Math.abs(dx) || -2;
-        }
-      };
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        dx = Math.abs(dx) || 2;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        dx = -Math.abs(dx) || -2;
+      }
+    };
     window.addEventListener("keydown", keyDownHandler);
     // Draw ball
     const drawBall = () => {
@@ -162,15 +166,17 @@ const Canvas: React.FC<CanvasProps> = () => {
       ball_y += dy;
 
       // Emit the updated ball position to the server
-      //    socket.emit("updateBall", room, ball_x, ball_y);
+      if (host) {
+        socket.emit("updateBall", room, ball_x, ball_y);
+      }
 
       requestAnimationFrame(draw);
     };
     draw();
     return () => {
-        canvas.removeEventListener("mousemove", mouseMoveHandler);
-        window.removeEventListener("keydown", keyDownHandler);
-      };
+      canvas.removeEventListener("mousemove", mouseMoveHandler);
+      window.removeEventListener("keydown", keyDownHandler);
+    };
   }, []);
 
   return (
