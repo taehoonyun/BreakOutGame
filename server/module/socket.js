@@ -1,42 +1,58 @@
 // socket.js
 module.exports = (io) => {
-  io.on("connection", (socket) => {
-    const userName = socket.handshake.query.userId;
-    // console.log(`🔌 Socket connected: ${userName}`);
-
-    socket.on("createRoom", (room) => {
-      socket.join(room);
+    // Helper function to calculate and emit the list of actual rooms
+    const emitRoomList = () => {
+      const allRooms = io.sockets.adapter.rooms; // Map<string, Set<string>>
+      const connectedSocketIds = new Set(io.sockets.sockets.keys());
+      const actualRooms = Array.from(allRooms.keys()).filter(
+        (roomId) => !connectedSocketIds.has(roomId)
+      );
+      io.emit("Rooms", actualRooms);
+    };
+  
+    io.on("connection", (socket) => {
+      const userName = socket.handshake.query.userId;
+      console.log(`🔌 Socket connected: ${socket.id} (${userName})`);
+  
+      // When a client joins a room, check for existing host.
+      socket.on("joinRoom", (room) => {
+        socket.join(room);
+        const roomSockets = io.sockets.adapter.rooms.get(room);
+        console.log(roomSockets);
+        
+        let hostExists = false;
+        if (roomSockets) {
+          roomSockets.forEach((socketId) => {
+            const clientSocket = io.sockets.sockets.get(socketId);
+            if (clientSocket && clientSocket.data.role === "host") {
+              hostExists = true;
+            }
+          });
+        }
+        socket.data.role = hostExists ? "guest" : "host";
+        console.log(`Socket ${socket.id} joined room '${room}' as ${socket.data.role}.`);
+        io.to(room).emit("message", `User ${socket.id} has joined the room as ${socket.data.role}.`);
+        socket.emit("roleAssigned", socket.data.role);
+        emitRoomList();
+      });
+  
+      // Relay paddle movements
+      socket.on("movePaddle", (data) => {
+        // data: { room, paddleX }
+        io.to(data.room).emit("movePaddle", data.paddleX);
+      });
+  
+      // Relay ball updates
+      socket.on("updateBall", (room, ball_x, ball_y) => {
+        io.to(room).emit("updateBall", ball_x, ball_y);
+      });
+      
+      emitRoomList();
+      
+      socket.on("disconnect", () => {
+        console.log(`❌ Socket disconnected: ${socket.id}`);
+        emitRoomList();
+      });
     });
-    const allRooms = io.sockets.adapter.rooms; // Map<string, Set<string>>
-    const connectedSocketIds = new Set(io.sockets.sockets.keys()); // All socket ID
-
-    // actualRooms
-    const actualRooms = Array.from(allRooms.keys()).filter(
-      (roomId) => !connectedSocketIds.has(roomId)
-    );
-    io.emit("Rooms", actualRooms);
-
-    // When a user joins a room (e.g., from the room selection page)
-    socket.on("joinRoom", (room) => {
-      socket.join(room);
-      //   console.log(`User: ${socket.id} joined room ${room}`);
-      io.to(room).emit("message", `User ${socket.id} has joined the room.`);
-    });
-
-    // When a user moves the paddle
-    socket.on("movePaddle", (data) => {
-      io.to(data.room).emit("movePaddle", data.paddleX);
-    });
-
-    // When a user updates the ball's position
-    socket.on("updateBall", (room, ball_x, ball_y) => {
-      // Data example: { room, ball }
-      io.to(room).emit("updateBall", ball_x, ball_y);
-    });
-
-    // Handle disconnections
-    socket.on("disconnect", () => {
-      console.log(`❌ Socket disconnected: ${socket.id}`);
-    });
-  });
-};
+  };
+  

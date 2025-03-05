@@ -1,66 +1,71 @@
+// BreakoutGame.tsx
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Socket } from "socket.io-client";
 import { createSocket } from "@/utils/index";
 import Canvas from "@/components/CanvasBall";
 
-// Create a single socket instance
+// Create a single socket instance (consider centralizing socket management for a real app)
 const socket: Socket = createSocket();
 
 const BreakoutGame: React.FC = () => {
   const [searchParams] = useSearchParams();
   const room = searchParams.get("room") || "";
-  const username = searchParams.get("username") || "defaultUser";
-  // A query parameter 'host' should be "true" for the first (host) user
-  const isHost = searchParams.get("host") === "true";
-  const [paddleX, setpaddleX] = useState<number>(0);
+  const userName = searchParams.get("username") || "defaultUser";
+  const [role, setRole] = useState("host");
+  // const role = searchParams.get("role") || "guest"; // "host" or "guest"
+  const isHost = role === "host";
+
+  // Local state for paddle and ball positions
+  const [paddleX, setPaddleX] = useState<number>(0);
   const [serverBall, setServerBall] = useState<{
     serverBallX: number;
     serverBallY: number;
-  }>({ serverBallX: 0, serverBallY: 0 });
+  }>({
+    serverBallX: 240,
+    serverBallY: 290,
+  });
 
+  // On mount, join or create room based on initial URL parameters
+  // Listen for role assignment from the server
   useEffect(() => {
-    socket.on("movePaddle", (serverPaddleX) => {
-      // Update the local ball position to match the server's
-      setpaddleX(serverPaddleX);
-    });
-    // Listen for server ball updates (if needed)
-    socket.on("updateBall", (serverBallX: number, serverBallY: number) => {
-      setServerBall({serverBallX, serverBallY});
-      // Optionally update ball_x and ball_y from server here if needed
+    socket.emit("joinRoom", room);
+    socket.on("roleAssigned", (assignedRole: string) => {
+      setRole(assignedRole);
     });
     return () => {
-      socket.off("message");
-      // socket.off("updateRooms");
+      socket.off("roleAssigned");
     };
   }, []);
 
+  // Guest: Listen for paddle and ball updates from the server.
   useEffect(() => {
-    if (isHost) {
-      // The first user creates the room
-      socket.emit("createRoom", room);
-    } else {
-      // Subsequent users just join the room
-      socket.emit("joinRoom", room);
-    }
+    if (!isHost) {
+      const handleMovePaddle = (serverPaddleX: number) => {
+        setPaddleX(serverPaddleX);
+      };
+      const handleUpdateBall = (serverBallX: number, serverBallY: number) => {
+        setServerBall({ serverBallX, serverBallY });
+      };
 
-    // Clean up if needed
-    return () => {
-      socket.off("message");
-    };
+      socket.on("movePaddle", handleMovePaddle);
+      socket.on("updateBall", handleUpdateBall);
+      return () => {
+        socket.off("movePaddle", handleMovePaddle);
+        socket.off("updateBall", handleUpdateBall);
+      };
+    }
   }, [isHost, room]);
 
   return (
     <div className="d-flex">
-      {/* Pass the host flag and room/username info as props */}
       <Canvas
         host={isHost}
         room={room}
-        username={username}
+        userName={userName}
         serverPaddleX={paddleX}
         serverBall={serverBall}
       />
-      {/* <Canvas host={isHost} room={room} username={username} /> */}
     </div>
   );
 };

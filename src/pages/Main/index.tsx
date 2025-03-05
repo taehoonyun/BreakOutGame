@@ -11,11 +11,11 @@ const Main = () => {
   const [rooms, setRooms] = useState<string[]>([]);
   useEffect(() => {
     // Listen for the "Rooms" event once the component mounts.
-    socket.on("Rooms", (msg) => {
-      console.log("Received Rooms:", msg);
-      // Optionally, update state if msg contains room data
-      if (msg) {
-        setRooms(msg);
+    socket.on("Rooms", (room) => {
+      console.log("Received Rooms:", room);
+      // Optionally, update state if room contains room data
+      if (room) {
+        setRooms(room);
       }
     });
 
@@ -34,14 +34,13 @@ const Main = () => {
   // Create a new room by navigating to /game
   const handleCreateRoom = () => {
     if (roomId.trim()) {
-      navigate(`/game?room=${roomId}&username=${userId}&host=true`);
+      navigate(`/game?room=${roomId}&username=${userId}`);
     }
   };
 
   // Join an existing room and navigate to the game page (logic commented out for now)
   const handleJoinRoom = (room: string) => {
-    // socket.emit("joinRoom", room);
-    navigate(`/game?room=${room}&username=${userId}&host=false`);
+    navigate(`/game?room=${room}&username=${userId}`);
   };
 
   return (

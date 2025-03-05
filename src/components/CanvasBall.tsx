@@ -1,3 +1,4 @@
+// CanvasBall.tsx
 import React, { useRef, useEffect } from "react";
 import { Socket } from "socket.io-client";
 import { createSocket } from "@/utils/index";
@@ -5,33 +6,38 @@ import { createSocket } from "@/utils/index";
 type CanvasProps = {
   host: boolean;
   room: string;
-  username: string;
+  userName: string;
   serverPaddleX: number;
-  serverBall: {serverBallX: number, serverBallY: number};
+  serverBall: { serverBallX: number; serverBallY: number };
 };
 
+// Create a single socket instance (consider centralizing this in your app)
 const socket: Socket = createSocket();
 
 const Canvas: React.FC<CanvasProps> = ({
   host,
   room,
-  username,
+  userName,
   serverPaddleX,
   serverBall,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Create a ref to store the paddle X value so we don't re-run the effect
-  const paddleXRef = useRef<number>(serverPaddleX);
   
-  const serverBallRef = useRef<{serverBallX: number, serverBallY: number}>(serverBall);
+  // Refs for paddle and ball positions
+  const paddleXRef = useRef<number>(serverPaddleX);
+  const ballRef = useRef<{ x: number; y: number }>({
+    x: serverBall.serverBallX || 240,
+    y: serverBall.serverBallY || 290,
+  });
 
-  // Update the paddleXRef whenever serverPaddleX prop changes
+  // Update paddle ref when serverPaddleX prop changes
   useEffect(() => {
     paddleXRef.current = serverPaddleX;
   }, [serverPaddleX]);
 
+  // Update ball ref when serverBall prop changes (for non-host clients)
   useEffect(() => {
-    serverBallRef.current = serverBall;
+    ballRef.current = { x: serverBall.serverBallX, y: serverBall.serverBallY };
   }, [serverBall]);
 
   useEffect(() => {
@@ -40,16 +46,14 @@ const Canvas: React.FC<CanvasProps> = ({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Game variables
-    let ball_x = canvas.width / 2;
-    let ball_y = canvas.height - 30;
+    // Ball and paddle configuration
     let dx = 2;
     let dy = -2;
     const ballRadius = 10;
     const paddleHeight = 10;
     const paddleWidth = 75;
-    // Use paddleXRef.current for initial paddle position; default to center if undefined
-    let paddleX = paddleXRef.current || (canvas.width - paddleWidth) / 2;
+    let lastEmitTime = 0;
+    const emitInterval = 100; // ms throttle for ball updates
 
     // Brick setup
     const brickRowCount = 3;
@@ -67,32 +71,45 @@ const Canvas: React.FC<CanvasProps> = ({
       }
     }
 
-    // Mouse event for paddle movement
+    // For guest clients: listen for server updates
+    socket.on("updateBall", (x: number, y: number) => {
+      if (!host) {
+        ballRef.current = { x, y };
+      }
+    });
+    socket.on("updatePaddle", (updatedPaddleX: number) => {
+      if (!host) {
+        paddleXRef.current = updatedPaddleX;
+      }
+    });
+
+    // Host-only: mouse event for paddle control
     const mouseMoveHandler = (e: MouseEvent) => {
+      if (!host) return;
       const relativeX = e.clientX - canvas.offsetLeft;
       if (relativeX > 0 && relativeX < canvas.width) {
-        paddleX = relativeX - paddleWidth / 2;
-        // Update the ref so new values are reflected in the draw loop
-        paddleXRef.current = paddleX;
-        socket.emit("movePaddle", { room, paddleX });
+        const newPaddleX = relativeX - paddleWidth / 2;
+        paddleXRef.current = newPaddleX;
+        socket.emit("movePaddle", { room, paddleX: newPaddleX });
       }
     };
-    canvas.addEventListener("mousemove", mouseMoveHandler);
+    if (host) canvas.addEventListener("mousemove", mouseMoveHandler);
 
-    // Key event for controlling ball direction (if applicable)
+    // Host-only: key event for ball control
     const keyDownHandler = (e: KeyboardEvent) => {
+      if (!host) return;
       if (e.key === "Right" || e.key === "ArrowRight") {
         dx = Math.abs(dx) || 2;
       } else if (e.key === "Left" || e.key === "ArrowLeft") {
         dx = -Math.abs(dx) || -2;
       }
     };
-    window.addEventListener("keydown", keyDownHandler);
+    if (host) window.addEventListener("keydown", keyDownHandler);
 
     // Drawing functions
     const drawBall = () => {
       ctx.beginPath();
-      ctx.arc(ball_x, ball_y, ballRadius, 0, Math.PI * 2);
+      ctx.arc(ballRef.current.x, ballRef.current.y, ballRadius, 0, Math.PI * 2);
       ctx.fillStyle = "#0095DD";
       ctx.fill();
       ctx.closePath();
@@ -135,10 +152,10 @@ const Canvas: React.FC<CanvasProps> = ({
           const b = bricks[c][r];
           if (b.status === 1) {
             if (
-              ball_x > b.x &&
-              ball_x < b.x + brickWidth &&
-              ball_y > b.y &&
-              ball_y < b.y + brickHeight
+              ballRef.current.x > b.x &&
+              ballRef.current.x < b.x + brickWidth &&
+              ballRef.current.y > b.y &&
+              ballRef.current.y < b.y + brickHeight
             ) {
               dy = -dy;
               b.status = 0;
@@ -148,53 +165,55 @@ const Canvas: React.FC<CanvasProps> = ({
       }
     };
 
-    // Game loop
-    const draw = () => {
+    // Main game loop
+    const gameLoop = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBricks();
       drawBall();
       drawPaddle();
       collisionDetection();
 
-      // Bounce off left/right walls
-      if (ball_x > canvas.width - ballRadius || ball_x < ballRadius) {
+      // Bounce off walls
+      if (
+        ballRef.current.x > canvas.width - ballRadius ||
+        ballRef.current.x < ballRadius
+      ) {
         dx = -dx;
       }
-      // Bounce off the top wall
-      if (ball_y < ballRadius) {
+      if (ballRef.current.y < ballRadius) {
         dy = -dy;
       } else if (
-        ball_x > paddleXRef.current &&
-        ball_x < paddleXRef.current + paddleWidth &&
-        ball_y > canvas.height - ballRadius - paddleHeight &&
-        ball_y < canvas.height - 15
+        ballRef.current.x > paddleXRef.current &&
+        ballRef.current.x < paddleXRef.current + paddleWidth &&
+        ballRef.current.y > canvas.height - ballRadius - paddleHeight &&
+        ballRef.current.y < canvas.height - 15
       ) {
-        // Calculate bounce angle on paddle hit
-        const relativeIntersectX =
-          ball_x - (paddleXRef.current + paddleWidth / 2);
-        const normalizedRelativeIntersectionX =
-          relativeIntersectX / (paddleWidth / 2);
-        const bounceAngle = normalizedRelativeIntersectionX * (Math.PI / 3);
-        const speed = Math.sqrt(dx * dx + dy * dy);
-        dx = speed * Math.sin(bounceAngle);
-        dy = -speed * Math.cos(bounceAngle);
+        dy = -dy;
       }
-      // Update ball position (only if this client is designated as the controller)
-      ball_x += dx;
-      ball_y += dy;
-      // Optionally emit the updated ball position to the server
-      socket.emit("updateBall", room, ball_x, ball_y);
 
-      requestAnimationFrame(draw);
+      // Host-only: update ball position and emit updates
+      if (host) {
+        ballRef.current.x += dx;
+        ballRef.current.y += dy;
+        const now = Date.now();
+        if (now - lastEmitTime > emitInterval) {
+          socket.emit("updateBall", room, ballRef.current.x, ballRef.current.y);
+          lastEmitTime = now;
+        }
+      }
+      requestAnimationFrame(gameLoop);
     };
 
-    draw();
+    gameLoop();
 
     // Cleanup on unmount
     return () => {
-      canvas.removeEventListener("mousemove", mouseMoveHandler);
-      window.removeEventListener("keydown", keyDownHandler);
+      if (host) {
+        canvas.removeEventListener("mousemove", mouseMoveHandler);
+        window.removeEventListener("keydown", keyDownHandler);
+      }
       socket.off("updateBall");
+      socket.off("updatePaddle");
     };
   }, [room, host]);
 
