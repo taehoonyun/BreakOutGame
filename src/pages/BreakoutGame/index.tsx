@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Socket } from "socket.io-client";
 import { createSocket } from "@/utils/index";
@@ -13,6 +13,27 @@ const BreakoutGame: React.FC = () => {
   const username = searchParams.get("username") || "defaultUser";
   // A query parameter 'host' should be "true" for the first (host) user
   const isHost = searchParams.get("host") === "true";
+  const [paddleX, setpaddleX] = useState<number>(0);
+  const [serverBall, setServerBall] = useState<{
+    serverBallX: number;
+    serverBallY: number;
+  }>({ serverBallX: 0, serverBallY: 0 });
+
+  useEffect(() => {
+    socket.on("movePaddle", (serverPaddleX) => {
+      // Update the local ball position to match the server's
+      setpaddleX(serverPaddleX);
+    });
+    // Listen for server ball updates (if needed)
+    socket.on("updateBall", (serverBallX: number, serverBallY: number) => {
+      setServerBall({serverBallX, serverBallY});
+      // Optionally update ball_x and ball_y from server here if needed
+    });
+    return () => {
+      socket.off("message");
+      // socket.off("updateRooms");
+    };
+  }, []);
 
   useEffect(() => {
     if (isHost) {
@@ -32,8 +53,14 @@ const BreakoutGame: React.FC = () => {
   return (
     <div className="d-flex">
       {/* Pass the host flag and room/username info as props */}
-      <Canvas host={isHost} room={room} username={username} />
-      <Canvas host={!isHost} room={room} username={username} />
+      <Canvas
+        host={isHost}
+        room={room}
+        username={username}
+        serverPaddleX={paddleX}
+        serverBall={serverBall}
+      />
+      {/* <Canvas host={isHost} room={room} username={username} /> */}
     </div>
   );
 };

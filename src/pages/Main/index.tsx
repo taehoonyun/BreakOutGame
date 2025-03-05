@@ -31,19 +31,17 @@ const Main = () => {
     };
   }, []);
 
-  console.log(rooms);
-
   // Create a new room by navigating to /game
   const handleCreateRoom = () => {
     if (roomId.trim()) {
-      navigate(`/game?room=${roomId}&username=${userId}`);
+      navigate(`/game?room=${roomId}&username=${userId}&host=true`);
     }
   };
 
   // Join an existing room and navigate to the game page (logic commented out for now)
   const handleJoinRoom = (room: string) => {
     // socket.emit("joinRoom", room);
-    navigate(`/game?room=${room}&username=${userId}`);
+    navigate(`/game?room=${room}&username=${userId}&host=false`);
   };
 
   return (

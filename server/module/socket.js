@@ -25,9 +25,7 @@ module.exports = (io) => {
 
     // When a user moves the paddle
     socket.on("movePaddle", (data) => {
-      // Data example: { room, position }
-      console.log(data);
-      //   io.to(data.room).emit("updatePaddle", data.position);
+      io.to(data.room).emit("movePaddle", data.paddleX);
     });
 
     // When a user updates the ball's position
