@@ -1,39 +1,51 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
 import { Container, Card, Form, Button, ListGroup } from "react-bootstrap";
+import { createSocket } from "@/utils/index";
+import { Socket } from "socket.io-client";
 const userId = localStorage.getItem("userId");
-const socket = io("http://localhost:5000", {
-  reconnectionDelayMax: 10000,
-  auth: {
-    token: "123",
-  },
-  query: {
-    username: userId,
-  },
-});
+const socket: Socket = createSocket();
 const Main = () => {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState("");
-  const [rooms, setRooms] = useState<{ [key: string]: any }>({});
+  const [rooms, setRooms] = useState<string[]>([]);
   useEffect(() => {
-    socket.on("updateRooms", (rooms) => {
-      setRooms(rooms);
+    // Listen for the "Rooms" event once the component mounts.
+    socket.on("Rooms", (msg) => {
+      console.log("Received Rooms:", msg);
+      // Optionally, update state if msg contains room data
+      if (msg) {
+        setRooms(msg);
+      }
     });
+
+    // Optionally listen for "updateRooms" event if needed.
+    // socket.on("updateRooms", (rooms) => {
+    //   setRooms(rooms);
+    // });
+
+    // Clean up the listener on component unmount.
+    return () => {
+      socket.off("Rooms");
+      // socket.off("updateRooms");
+    };
   }, []);
 
-  // Create a new room by emitting a socket event
+  console.log(rooms);
+
+  // Create a new room by navigating to /game
   const handleCreateRoom = () => {
     if (roomId.trim()) {
-      socket.emit("createRoom", roomId);
+      navigate(`/game?room=${roomId}&username=${userId}`);
     }
   };
 
-  // Join an existing room and navigate to the game page
+  // Join an existing room and navigate to the game page (logic commented out for now)
   const handleJoinRoom = (room: string) => {
-    socket.emit("joinRoom", room);
+    // socket.emit("joinRoom", room);
     navigate(`/game?room=${room}&username=${userId}`);
   };
+
   return (
     <Container
       fluid
@@ -55,7 +67,9 @@ const Main = () => {
         <Card.Body>
           <Form>
             <Form.Group className="mb-3">
-              <Form.Label style={{ color: "#ff9800" }}>Create a Room</Form.Label>
+              <Form.Label style={{ color: "#ff9800" }}>
+                Create a Room
+              </Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter room name"
@@ -68,7 +82,11 @@ const Main = () => {
                 }}
               />
             </Form.Group>
-            <Button variant="warning" onClick={handleCreateRoom} className="w-100">
+            <Button
+              variant="warning"
+              onClick={handleCreateRoom}
+              className="w-100"
+            >
               Create Room
             </Button>
           </Form>
@@ -87,7 +105,7 @@ const Main = () => {
           Available Rooms
         </Card.Header>
         <ListGroup variant="flush">
-          {Object.keys(rooms).length === 0 && (
+          {rooms.length === 0 && (
             <ListGroup.Item
               style={{
                 backgroundColor: "#3a3a3a",
@@ -99,9 +117,9 @@ const Main = () => {
               No rooms available.
             </ListGroup.Item>
           )}
-          {Object.keys(rooms).map((room) => (
+          {rooms.map((room, index) => (
             <ListGroup.Item
-              key={room}
+              key={index}
               style={{
                 backgroundColor: "#3a3a3a",
                 color: "#fff",

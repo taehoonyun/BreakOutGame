@@ -3,7 +3,9 @@ const mRes = require("../module/commonResponse");
 module.exports.login = async (req, res) => {
   if (req.body && req.body.params) {
     const { userId } = req.body.params;
-
+    if (!userId) {
+      return res.status(400).json({ message: "Username is required!" });
+    }
     if (true) {
       // if (await bcrypt.compare(password, user.PASSWORD)) {
       //     // const { token, exp } = authUtil.generateLoginToken(id);
