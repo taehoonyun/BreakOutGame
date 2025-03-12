@@ -1,9 +1,28 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Phaser from "phaser";
+import { createSocket } from "@/utils/index";
+import { Socket } from "socket.io-client";
+const socket: Socket = createSocket();
 
 const BreakDownGame: React.FC = () => {
   const gameRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  const room = searchParams.get("room") || "";
+  const userName = searchParams.get("username") || "defaultUser";
+  const [role, setRole] = useState("host");
+  // const role = searchParams.get("role") || "guest"; // "host" or "guest"
+  const isHost = role === "host";
 
+  useEffect(() => {
+    socket.emit("joinRoom", room);
+    socket.on("roleAssigned", (assignedRole: string) => {
+      setRole(assignedRole);
+    });
+    return () => {
+      socket.off("roleAssigned");
+    };
+  }, []);
   useEffect(() => {
     if (!gameRef.current) return;
 
@@ -41,17 +60,24 @@ const BreakDownGame: React.FC = () => {
       const paddle = this.physics.add.sprite(400, 550, "paddle").setImmovable();
       paddle.body.allowGravity = false;
 
-      const ball = this.physics.add.sprite(400, 500, "ball").setCollideWorldBounds(true).setBounce(1);
+      const ball = this.physics.add
+        .sprite(400, 500, "ball")
+        .setCollideWorldBounds(true)
+        .setBounce(1);
       ball.setVelocity(150, -150);
 
       // 🧱 벽돌 생성 (가로 크기 1.2배 증가)
       const brickWidth = 64 * 1.2; // 64 → 77
       const brickHeight = 32; // 높이는 그대로 유지
       const bricks = this.physics.add.staticGroup();
-      
+
       for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 3; j++) {
-          const brick = bricks.create(150 + i * (brickWidth + 10), 100 + j * (brickHeight + 10), "brick");
+          const brick = bricks.create(
+            150 + i * (brickWidth + 10),
+            100 + j * (brickHeight + 10),
+            "brick"
+          );
           brick.setDisplaySize(brickWidth, brickHeight); // 크기 조정
           brick.setSize(brickWidth, brickHeight); // 충돌 박스 조정
         }

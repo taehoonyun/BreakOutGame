@@ -3,6 +3,8 @@ module.exports = (io) => {
   // Helper function to calculate and emit the list of actual rooms
   const emitRoomList = () => {
     const allRooms = io.sockets.adapter.rooms; // Map<string, Set<string>>
+    console.log(allRooms);
+    
     const connectedSocketIds = new Set(io.sockets.sockets.keys());
     const actualRooms = Array.from(allRooms.keys()).filter(
       (roomId) => !connectedSocketIds.has(roomId)
