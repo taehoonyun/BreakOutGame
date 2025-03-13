@@ -9,6 +9,7 @@ const Main = () => {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState("");
   const [rooms, setRooms] = useState<string[]>([]);
+  
   useEffect(() => {
     // Listen for the "Rooms" event once the component mounts.
     socket.on("Rooms", (room) => {

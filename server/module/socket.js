@@ -3,8 +3,6 @@ module.exports = (io) => {
   // Helper function to calculate and emit the list of actual rooms
   const emitRoomList = () => {
     const allRooms = io.sockets.adapter.rooms; // Map<string, Set<string>>
-    console.log(allRooms);
-    
     const connectedSocketIds = new Set(io.sockets.sockets.keys());
     const actualRooms = Array.from(allRooms.keys()).filter(
       (roomId) => !connectedSocketIds.has(roomId)
@@ -20,6 +18,8 @@ module.exports = (io) => {
     socket.on("joinRoom", (room) => {
       socket.join(room);
       const roomSockets = io.sockets.adapter.rooms.get(room);
+      // 🔢 Get the number of users in the room
+      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
 
       let hostExists = false;
       if (roomSockets) {
@@ -41,18 +41,27 @@ module.exports = (io) => {
         `User ${socket.id} has joined the room as ${socket.data.role}.`
       );
       socket.emit("roleAssigned", socket.data.role);
+      // 📢 Notify all clients in the room about the updated count
+      io.to(room).emit("roomUserCount", { room, count: roomSize });
       emitRoomList();
     });
 
-    // Relay paddle movements
+    // Sync paddle movement
     socket.on("movePaddle", (data) => {
-      // data: { room, paddleX, userName }
-      io.to(data.room).emit("movePaddle", data.paddleX);
+      io.to(data.room).emit("movePaddle", {
+        paddleX: data.paddleX,
+        user: data.user,
+      });
     });
 
-    // Relay ball updates
-    socket.on("updateBall", (room, ball_x, ball_y) => {
-      io.to(room).emit("updateBall", ball_x, ball_y);
+    // Sync ball movement
+    socket.on("updateBall", (data) => {
+      io.to(data.room).emit("updateBall", data);
+    });
+
+    // Sync brick destruction
+    socket.on("brickDestroyed", (data) => {
+      io.to(data.room).emit("brickDestroyed", data);
     });
 
     emitRoomList();
