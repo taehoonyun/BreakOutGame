@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { Socket } from "socket.io-client";
-import { DeepSeekAPI } from "@/utils/index"; 
 
 export class OpponentGameScene extends Phaser.Scene {
   private paddle!: Phaser.Physics.Arcade.Sprite;
@@ -10,7 +9,7 @@ export class OpponentGameScene extends Phaser.Scene {
   private userName: string;
   private socket: Socket;
   private gameOver: boolean = false; // Track game state
-  private deepSeekAPI: DeepSeekAPI;
+
 
   constructor(
     room: string,
@@ -23,7 +22,6 @@ export class OpponentGameScene extends Phaser.Scene {
     this.userName = userName;
     this.socket = socket;
     this.gameOver = gameOver;
-    this.deepSeekAPI = new DeepSeekAPI();
   }
 
   preload() {
