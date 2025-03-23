@@ -57,7 +57,7 @@ export const loginId = async (userId: string) => {
     throw new Error(err.response?.data?.err ?? err.message);
   }
 };
-export const getapi = async (messages: any) => {
+export const getAIResponse  = async (messages: any) => {
   try {
     const response = await client.post<SaveResponse>("/util/deepseek", {
       params: {

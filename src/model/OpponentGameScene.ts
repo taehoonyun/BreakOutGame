@@ -10,7 +10,6 @@ export class OpponentGameScene extends Phaser.Scene {
   private socket: Socket;
   private gameOver: boolean = false; // Track game state
 
-
   constructor(
     room: string,
     userName: string,
@@ -73,8 +72,14 @@ export class OpponentGameScene extends Phaser.Scene {
     // **Listen for bricks being destroyed**
     this.socket.on("brickDestroyed", (data) => {
       if (data.user !== this.userName) {
-        const brick = this.bricks.getChildren()[0];
-        if (brick) (brick as Phaser.Physics.Arcade.Sprite).destroy();
+        // Find and remove the correct brick
+        const brickToRemove = this.bricks.getChildren().find((brick: any) => {
+          return `${brick.x}-${brick.y}` === data.brickId;
+        });
+
+        if (brickToRemove) {
+          brickToRemove.destroy();
+        }
       }
     });
   }

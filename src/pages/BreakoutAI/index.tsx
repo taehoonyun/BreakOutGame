@@ -3,9 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import Phaser from "phaser";
 import { createSocket } from "@/utils/index";
 import { Socket } from "socket.io-client";
-import { MainGameScene } from "@/model/MainGameScene";
+import { MainGameSceneAI } from "@/model/MainGameSceneAI";
 import { OpponentGameScene } from "@/model/OpponentGameScene";
-import { getapi } from "@/api";
 
 const socket: Socket = createSocket();
 
@@ -18,34 +17,8 @@ const BreakoutAI: React.FC = () => {
   const [role, setRole] = useState("host");
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [playerCount, setPlayerCount] = useState(1); // Default: 1 player
-  
- async function main() {
-    const messages = [
-      { role: "system", content: "You are a helpful assistant." },
-      { role: "user", content: "Hello, how are you?" },
-    ];
 
-    try {
-      const response = await getapi(messages);
-      // const response = await fetch("http://localhost:5000/chat", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({ messages }),
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error("Failed to fetch response from server");
-      // }
-
-      console.log(response); // Log the assistant's response
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  }
   useEffect(() => {
-      main();
     socket.emit("joinRoom", room);
     socket.on("roleAssigned", (assignedRole: string) => {
       setRole(assignedRole);
@@ -64,7 +37,7 @@ const BreakoutAI: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!gameRef.current || !opponentGameRef.current) return;
+    if (!gameRef.current) return;
 
     const mainGame = new Phaser.Game({
       type: Phaser.AUTO,
@@ -74,7 +47,7 @@ const BreakoutAI: React.FC = () => {
         default: "arcade",
         arcade: { gravity: { x: 0, y: 0 }, debug: false },
       },
-      scene: new MainGameScene(room, userName, socket, gameOver),
+      scene: new MainGameSceneAI(room, userName, socket, gameOver),
       parent: gameRef.current,
     });
 

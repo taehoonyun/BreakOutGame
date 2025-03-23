@@ -32,11 +32,13 @@ const Canvas: React.FC<CanvasProps> = ({
 
   // Update paddle ref when serverPaddleX prop changes
   useEffect(() => {
+    console.log('Canvas received new paddle position:', serverPaddleX);
     paddleXRef.current = serverPaddleX;
   }, [serverPaddleX]);
 
   // Update ball ref when serverBall prop changes (for non-host clients)
   useEffect(() => {
+    console.log('Canvas received new ball position:', serverBall);
     ballRef.current = { x: serverBall.serverBallX, y: serverBall.serverBallY };
   }, [serverBall]);
 

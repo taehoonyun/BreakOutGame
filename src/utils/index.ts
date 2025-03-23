@@ -1,13 +1,14 @@
 // socketClient.ts
 import { io, Socket } from "socket.io-client";
 import OpenAI from "openai";
+import { getAIResponse } from "@/api";
 const userId = localStorage.getItem("userId");
 /**
  * Creates and returns a Socket.IO client instance.
  * @param namespace - The namespace URL to connect to (default is "ws://example.com/my-namespace")
  * @returns The Socket.IO client instance.
  */
-export  const createSocket = (
+export const createSocket = (
   namespace: string = "http://localhost:5000"
 ): Socket => {
   const socket = io(namespace, {
@@ -21,7 +22,6 @@ export  const createSocket = (
   });
   return socket;
 };
-
 
 export class DeepSeekAPI {
   private apiUrl: string = "https://api.deepseek.com/v1/move"; // Replace with actual API endpoint
@@ -43,4 +43,15 @@ export class DeepSeekAPI {
 
     return response.json();
   }
+}
+
+export async function callAI(
+  messages: any,
+): Promise<any | null> {
+  const response = await getAIResponse(messages);
+  if (response.result) {
+    return response.data;
+  }
+  // const paddleX = parseFloat(response?.paddleX);
+  // return isNaN(paddleX) ? null : paddleX;
 }

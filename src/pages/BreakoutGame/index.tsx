@@ -42,6 +42,7 @@ const BreakoutGame: React.FC = () => {
   useEffect(() => {
     if (!isHost) {
       const handleMovePaddle = (serverPaddleX: number) => {
+        console.log('Received paddle position:', serverPaddleX);
         setPaddleX(serverPaddleX);
       };
       const handleUpdateBall = (serverBallX: number, serverBallY: number) => {
